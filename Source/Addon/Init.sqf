@@ -20,10 +20,11 @@ GVAR(ContactsNextRequestTime) = time + 5;
 // HUD Settings
 GVAR(SquadHUD_Draw) = true;
 GVAR(SquadHUD_DataUpdateTimeout) = 15;
+GVAR(SquadHUD_Opacity) = 1;
 
 GVAR(ContactsHUD_Draw) = true;
 GVAR(ContactsHUD_DataUpdateTimeout) = 15;
-
+GVAR(ContactsHUD_Opacity) = 1;
 
 [] spawn {
 	sleep 2;

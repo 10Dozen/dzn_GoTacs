@@ -27,10 +27,11 @@ class dzn_GoTacs_MainOverlay: RscControlsGroup
 			x = -18.5 * GUI_GRID_W + GUI_GRID_X;
 			y = -1.5 * GUI_GRID_H + GUI_GRID_Y;
 			w = 77 * GUI_GRID_W;
-			h = 5 * GUI_GRID_H;
+			h = 30 * GUI_GRID_H;
+			colorBackground[] = {0,0,0,0.75};
 		};
 
-
+/*
 		class dzn_GoTacs_AssignTeamsBtn: RscButtonMenu
 		{
 			idc = 2300;
@@ -49,7 +50,7 @@ class dzn_GoTacs_MainOverlay: RscControlsGroup
 			w = 8.5 * GUI_GRID_W;
 			h = 1 * GUI_GRID_H;
 		};
-
+*/
 
 	};
 };

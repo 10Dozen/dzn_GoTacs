@@ -19,147 +19,96 @@ COMPILE_FUNCTION(fnc_findContacts);
 COMPILE_FUNCTION(fnc_contactsLoop);
 COMPILE_FUNCTION(fnc_uiDrawContactsHUD);
 
+COMPILE_FUNCTION(fnc_squadManageMenu);
 
-dzn_GoTacs_fnc_createSquad = {
-	private _units = (units player) - [player];
-	private _menu = [
-		[0, "HEADER", "Squad Creator"]
-	];
 
-	if (isNil "dzn_GoTacs_Kits") then {
-		dzn_GoTacs_Kits = (allVariables missionNamespace) select { _x select [0,4] == "kit_" };
+fnc_dismountFast = {
+	private _units = _this select {
+		private _vrole = assignedVehicleRole _x;
+
+		!isPlayer _x
+		&& !(
+			"driver" in _vrole
+			|| "gunner" in _vrole
+			|| "turret" in _vrole
+			|| "Turret" in _vrole
+		)
 	};
-	private _kitsDisplayItems = ["Heal", "Arsenal", "ACE Arsenal", "Renew kit"] + dzn_GoTacs_Kits + ["Expel", "Delete"];
 
-	private _lineID = 0;
+	_units spawn fnc_bailOut;	
+};
+
+fnc_bailOut = {
+	private _units = _this - [player];
 
 	{
-		if (alive _x) then {
-			_lineID = _lineID + 1;
+		[_x, assignedVehicle _x, _forEachIndex % 2 == 0] spawn {
+			params ["_u", "_v", "_isDirLeft"];
 
-			private _lineTitle = [
-				_lineId
-				, "LABEL"
-				, format [
-					"<t color='%2'>Unit #%1</t>"
-					, _forEachIndex + 1
-					, switch (assignedTeam (_units # _forEachIndex)) do {
-						case "RED": 	{ "#f91818" };
-						case "BLUE": 	{ "#2667ff" };
-						case "GREEN": 	{ "#00aa4c" };
-						default 		{ "#ffffff" };
-					}
-				]
-			];
-			private _lineKitSelector = [_lineId, "DROPDOWN", _kitsDisplayItems, _kitsDisplayItems];
-			private _lineKitApply = [
-				_lineId
-				, "BUTTON"
-				, "APPLY"
-				, compile format ["
-					private _unitID = %1; 
-					private _unit = ((units player) - [player]) # _unitID;
-					private _data = (_this # _unitID) # 1;
+			waitUntil { (velocity _v select 0) < 2 };
 
-					switch (toLower _data) do {
-						case 'heal': { 
-							[_unit, 'Healed!'] call dzn_GoTacs_fnc_hint;
-							_unit call dzn_GoTacs_fnc_heal;
-						};
-						case 'arsenal': {
-							[_unit] spawn {
-								closeDialog 2; 
-								uiSleep 0.05;
-								['Open',[true, objnull, _this # 0]] call bis_fnc_arsenal;
-							};
-						};
-						case 'ace arsenal': {
-							[_unit] spawn {
-								closeDialog 2; uiSleep 0.05;
-								[_this # 0, _this # 0, true] call ace_arsenal_fnc_openBox;
-							};
-						};
-						case 'renew kit': {
-							[_unit, 'Kit renewed!'] call dzn_GoTacs_fnc_hint;
-							[_unit, _unit getVariable 'dzn_gear'] remoteExec ['dzn_fnc_gear_assignKit', _unit];
-						};
-						case 'expel': {
-							[_unit, 'Expeled from squad!'] call dzn_GoTacs_fnc_hint;
-							[_unit] spawn {
-								closeDialog 2; 
-								uiSleep 0.05;
+			unassignVehicle _u;
+			moveOut _u;
 
-								private _newGrp = player getVariable ['dzn_GoTacs_ExpelGroup', grpNull];
-								if (isNull _newGrp) then {
-									_newGrp = createGroup (side player);
-									player setVariable ['dzn_GoTacs_ExpelGroup', _newGrp];
-								};						
-								
-								_this join _newGrp;
+			private _posX = if (_isDirLeft) then { 1 } else { -1 };
+			private _pos = _v modelToWorld [_posX * 25, -25, 0];
+			
+			[_u, _pos getPos [10, random 360], 20, [true, _v]] spawn fnc_sprintTo;
+		};
 
-								uiSleep 0.005;
-								[] spawn dzn_GoTacs_fnc_createSquad;								
-							};
-						};
-						case 'delete': {
-							[_unit, 'Deleted from squad!'] call dzn_GoTacs_fnc_hint;
-							[_unit] spawn {
-								closeDialog 2; 
-								uiSleep 0.05;
-								deleteVehicle (_this # 0);
+		sleep (0.35 + random 0.5);
+	} forEach _units;
+};
 
-								uiSleep 0.005;
-								[] spawn dzn_GoTacs_fnc_createSquad;
-							};
-						};
-						default {
-							[_unit, 'Kit applied!'] call dzn_GoTacs_fnc_hint;
-							[_unit, _data] remoteExec ['dzn_fnc_gear_assignKit', _unit];
-						};
-					}
-					", _forEachIndex
-				]
-			];
+fnc_sprintTo = {
+	params ["_u", "_pos", ["_timeout", 20], ["_doOverwatch", [false, objNull]]];
+	_timeout = time + _timeout;
 
-			_menu pushBack _lineTitle;
-			_menu pushBack _lineKitSelector;
-			_menu pushBack _lineKitApply;
+	_u doMove _pos;
+	waitUntil { 
+		_u setAnimSpeedCoef 1.5; 
+		
+		sleep 0.5;
+		_u distance _pos < 2.5 || time > _timeout
+	};
+
+	_u setAnimSpeedCoef 1;
+
+	if (_doOverwatch # 0) then {
+		sleep 1.5;
+		_posToWatch = (_doOverwatch # 1) modelToWorld [selectRandom[1,-1] * 50, 50, 0];
+		_u doWatch _posToWatch;
+
+		sleep 3;
+		_u doWatch objNull; 
+	};
+};
+
+fnc_getInFast = {
+	params ["_units","_v"];
+	_units = _units - [player];
+
+	{
+		if (vehicle _x == _x) then {
+			[_x, _v, _role] spawn {
+				params ["_u","_v","_r"];
+
+				private _timeout = time + 20;
+
+				[_u, getPos _v, 20] spawn fnc_sprintTo;
+
+				waitUntil { 
+					_u distance (getPos _v) < 6.5 
+					|| time > _timeout
+				};
+
+				if (_u distance (getPos _v) < 6.5) then {
+					sleep 1.5;
+					_u moveInAny _v;
+				};
+
+				_u setAnimSpeedCoef 1; 
+			};
 		};
 	} forEach _units;
-
-	_lineId = _lineId + 1;
-	_menu pushBack [_lineId, "LABEL", ""];
-
-	_lineId = _lineId + 1;
-	_menu pushBack [_lineId, "BUTTON", "CLOSE", { closeDialog 2; }];
-	_menu pushBack [_lineId, "LABEL", ""];
-	_menu pushBack [_lineId, "BUTTON", "ADD UNIT", {
-		[] spawn {
-			closeDialog 2;
-			uiSleep 0.01;
-			private _unit = (group player) createUnit [typeof player, position player, [], 0, "FORM"];
-			[_unit, 'Unit created!'] call dzn_GoTacs_fnc_hint;
-
-			[_unit] call dzn_GoTacs_fnc_setupSquadUnits;
-
-			[] spawn dzn_GoTacs_fnc_createSquad;
-		};
-	}];
-
-	_menu call dzn_GoTacs_fnc_ShowAdvDialog;
-};
-
-dzn_GoTacs_fnc_heal = {
-	_this setDamage 0;
-	[_this,_this] call ace_medical_fnc_treatmentAdvanced_fullHealLocal;
-};
-
-dzn_GoTacs_fnc_hint = {
-	params ["_unit","_action"];
-	hint parseText format [
-		"<t size='1' color='#FFD000' shadow='1'>Unit %1:</t>
-		<br />%2"
-		, name _unit
-		, _action
-	];
 };
