@@ -37,6 +37,8 @@ fnc_resetContactLoop = {
 
 	sleep 10;
 
+	GVAR(ContactsLoopEnabled) = true;
+
 	GVAR(ContactsData) = [];
 	[] spawn GVAR(fnc_contactsLoop);
 };
