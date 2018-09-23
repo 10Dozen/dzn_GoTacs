@@ -35,7 +35,7 @@ switch (toLower _mode) do {
 		if (isNil "dzn_GoTacs_Kits") then {
 			dzn_GoTacs_Kits = (allVariables missionNamespace) select { _x select [0,4] == "kit_" };
 		};
-		private _kitsDisplayItems = ["Heal", "Arsenal", "ACE Arsenal", "Renew kit"] + dzn_GoTacs_Kits + ["Expel", "Delete"];
+		private _kitsDisplayItems = ["Heal", "Arsenal", "ACE Arsenal", "Renew kit", "Copy kit", "Apply kit"] + dzn_GoTacs_Kits + ["Expel", "Delete"];
 
 		private _lineID = 0;
 
@@ -47,7 +47,7 @@ switch (toLower _mode) do {
 					_lineId
 					, "LABEL"
 					, format [
-						"<t color='%2'>Unit #%1</t>"
+						"<t color='%2'>Unit #%1</t> %3%4"
 						, _forEachIndex + 1
 						, switch (assignedTeam (_units # _forEachIndex)) do {
 							case "RED": 	{ "#f91818" };
@@ -55,6 +55,9 @@ switch (toLower _mode) do {
 							case "GREEN": 	{ "#00aa4c" };
 							default 		{ "#ffffff" };
 						}
+						, [_x, "icon"] call dzn_GoTacs_fnc_getUnitDamageData
+						, if (loadAbs _x >= 1000) then { " Over-encumbered" } else { "" }
+
 					]
 				];
 				private _lineKitSelector = [_lineId, "DROPDOWN", _kitsDisplayItems, _kitsDisplayItems];
@@ -89,6 +92,18 @@ switch (toLower _mode) do {
 								[""Hint"", [_unit, ""Kit renewed!""]] call %2;
 								[_unit, _unit getVariable 'dzn_gear'] remoteExec ['dzn_fnc_gear_assignKit', _unit];
 							};
+							case 'copy kit': {
+								[""Hint"", [_unit, ""Kit copied!""]] call %2;
+								%3 = getUnitLoadout _unit;
+							};
+							case 'apply kit': {
+								if (isNil { %3 }) then {
+									[""Hint"", [_unit, ""No kit to apply!""]] call %2;
+								} else {
+									[""Hint"", [_unit, ""Kit applied!""]] call %2;
+									_unit setUnitLoadout %3
+								};
+							};
 							case 'expel': {
 								[""Hint"", [_unit, ""Expeled from squad!""]] call %2;
 								[""Expel"", [_unit]] call %2;
@@ -105,6 +120,7 @@ switch (toLower _mode) do {
 						"
 						, _forEachIndex
 						, SVAR(fnc_squadManageMenu)
+						, SVAR(CopiedUnitLoadout)
 					]
 				];
 
@@ -119,7 +135,7 @@ switch (toLower _mode) do {
 
 		_lineId = _lineId + 1;
 		_menu pushBack [_lineId, "LABEL", ""];
-		private _squadAction = ["Heal", "Renew kit"] + dzn_GoTacs_Kits + ["Expel", "Delete"];
+		private _squadAction = ["Heal", "Renew kit","Apply kit"] + dzn_GoTacs_Kits + ["Expel", "Delete"];
 		_menu pushBack [_lineId, "DROPDOWN", _squadAction, _squadAction];
 		_menu pushBack [_lineId
 			, "BUTTON"
@@ -138,6 +154,14 @@ switch (toLower _mode) do {
 						[""Hint"", [_hintTitle, ""Kit renewed!""]] call %2;
 						_units apply { [_x, _x getVariable 'dzn_gear'] remoteExec ['dzn_fnc_gear_assignKit', _x] };
 					};
+					case 'apply kit': {
+						if (isNil { %3 }) then {
+							[""Hint"", [_hintTitle, ""No kit to apply!""]] call %2;
+						} else {
+							[""Hint"", [_hintTitle, ""Kit applied!""]] call %2;
+							_units apply { _x setUnitLoadout %3 };
+						};
+					};
 					case 'expel': {
 						[""Hint"", [_hintTitle, ""All units expeled from squad!""]] call %2;
 						[""Expel"", _units] call %2;
@@ -154,6 +178,7 @@ switch (toLower _mode) do {
 			"
 			, _lineId
 			, SVAR(fnc_squadManageMenu)
+			, SVAR(CopiedUnitLoadout)
 		]];
 
 		_lineId = _lineId + 1;
@@ -239,7 +264,7 @@ switch (toLower _mode) do {
 		hint parseText format [
 			"<t size='1' color='#FFD000' shadow='1'>%1:</t>
 			<br />%2"
-			, if (typename _unitTitle == "OBJECT") then { "Unit" + (name _unitTitle) } else { _unitTitle }
+			, if (typename _unitTitle == "OBJECT") then { "Unit " + (name _unitTitle) } else { _unitTitle }
 			, _action
 		];
 	};

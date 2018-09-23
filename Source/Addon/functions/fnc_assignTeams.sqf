@@ -29,6 +29,7 @@ private _units = units _grp;
 private _teamRed = [];
 private _teamBlue = [];
 private _teamGreen = [];
+private _teamYellow = [];
 
 private _mapping = [];
 
@@ -36,17 +37,27 @@ switch (toLower _template) do {
 	case "4-4": {
 		_mapping = [[1,3,5,7], [2,4,6,8] ];
 	};
-	case "3-3-2": {
-		_mapping = [[1,3,5], [2,4,6], [7,8]];
+	case "2-3-3": {
+		_mapping = [[3,5,7], [4,6,8], [1,2]];
 	};
 	case "3-4": {
 		_mapping = [[1,3,5,7], [0,2,4,6]];
 	};
 };
 
-for "_i" from 0 to (count _units) do {
+for "_i" from 0 to (count _units - 1) do {
 	private _unit = _units select _i;
+
 	switch (true) do {
+		case (toLower(_template) == "custom"): {
+			switch (assignedTeam _unit) do {
+				case "RED": { _teamRed pushBack _unit; };
+				case "BLUE": { _teamBlue pushBack _unit; };
+				case "GREEN": { _teamGreen pushBack _unit; };
+				case "YELLOW": { _teamYellow pushBack _unit; };
+			};
+		};
+
 		case (_i in (_mapping # 0)): {
 			_unit assignTeam "RED";
 			_teamRed pushBack _unit;
@@ -59,12 +70,16 @@ for "_i" from 0 to (count _units) do {
 			_unit assignTeam "GREEN";
 			_teamGreen pushBack _unit;
 		};
+		
 	};
 };
 
-player setVariable [SVAR(TeamPattern), _template];
+player setVariable [SVAR(TeamPattern), toUpper(_template)];
 player setVariable [SVAR(Teams), [
 	_teamRed
 	, _teamBlue
 	, _teamGreen
+	, _teamYellow
 ]];
+
+[] call GVAR(fnc_setupSquadUnits);

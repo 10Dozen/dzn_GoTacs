@@ -34,13 +34,14 @@ if (!GVAR(SquadHUD_Draw)) exitWith {};
 			case "RED": 	{ [0.85, 0, 0, 1] };
 			case "BLUE": 	{ [0.1, 0.1, 0.95, 1] };
 			case "GREEN": 	{ [0, 0.85, 0, 1] };
+			case "YELOW":	{ [0.93, 0.86, 0.16, 1] };
 			default 		{ [1,1,1,1] };
 		}];
 	};
 
 	private _dist = player distance _pos;	
 	private _posV = _pos;
-	_posV set [2, 1.75];
+	_posV set [2, (getPosATL _u select 2) + 1.75];
 		
 	// --- Distance data ---
 	private _distText = str(round _dist) + "m";

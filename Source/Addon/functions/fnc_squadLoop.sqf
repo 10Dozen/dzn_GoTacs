@@ -54,44 +54,16 @@ while { GVAR(SquadLoopEnabled) } do {
 		// \a3\ui_f\data\IGUI\Cfg\simpleTasks\types\heal_ca.paa
 		// \a3\ui_f\data\IGUI\Cfg\Actions\heal_ca.paa
 		// \a3\ui_f\data\GUI\Rsc\RscDisplayArsenal\cargoMisc_ca.paa
-		/*
-			getAllHitPointsDamage cursorObject select 0 select 10			
-			0: "hitlegs"
-			1: "legs"
+		
+		private _damageIconData = [];
+		private _damageColor = [_u, "color"] call GVAR(fnc_getUnitDamageData);
 
-			getAllHitPointsDamage cursorObject select 0 select 9
-			0: "hithands"
-			1: "hands"
-
-			getAllHitPointsDamage cursorObject select 0 select 2
-			0: "hithead"
-			1: "head"
-
-			getAllHitPointsDamage cursorObject select 0 select 7
-			0: "hitbody"
-			1: "body"
-		*/
-		private _damageIconData = ["", [0,0,0,0]];
-
-		private _damageIcon = "\a3\ui_f\data\IGUI\Cfg\Actions\heal_ca.paa";
-		private _damageLevel = 0;
-		{ 
-			_damageLevel = _damageLevel max _x;
-		} forEach (getAllHitPointsDamage _u select 2);
-
-		if (_damageLevel > 0.75) then {
-			// rgb(226, 40, 40)
-			_damageIconData = [_damageIcon, [0.88, 0.15, 0.15, 1]];
+		if (_damageColor isEqualTo [0,0,0,0]) then {
+			// --- No damage
+			_damageIconData = ["", [0,0,0,0]];
 		} else {
-			if (_damageLevel > 0.5) then {
-				// rgb(255, 127, 15
-				_damageIconData = [_damageIcon, [1, 0.5, 0.06, 1]];
-			} else {
-				if (_damageLevel > 0.25) then {
-					// rgb(255, 230, 45)
-					_damageIconData = [_damageIcon, [1, 0.9, 0.17, 1]];
-				};
-			};
+			// --- Ligth+ damage
+			_damageIconData = ["\a3\ui_f\data\IGUI\Cfg\Actions\heal_ca.paa", _damageColor];
 		};
 
 		_data pushBack _damageIconData;

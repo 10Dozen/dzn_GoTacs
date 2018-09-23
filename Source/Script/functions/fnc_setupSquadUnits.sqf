@@ -31,27 +31,38 @@ if (_this isEqualTo []) then {
 };
 
 {
-	// --- Set unit skill
-	_x setSkill 1;
+	if !(_x getVariable [SVAR(UnitSetUp), false]) then {
+		
+		// --- Set unit skill
+		_x setSkill 1;
 
-	// --- Rating to prevent friendly fire and mounting problems
-	_x addRating 999999;
+		// --- Rating to prevent friendly fire and mounting problems
+		_x addRating 999999;
 
-	// --- Add Fired EH ---
-	_x getVariable [SVAR(isFiring), false];
-	_x addEventHandler ["FiredMan", {
-		params ["_unit"];
+		// --- Add Fired EH ---
+		_x getVariable [SVAR(isFiring), false];
+		_x addEventHandler ["FiredMan", {
+			params ["_unit"];
 
-		_unit setVariable [SVAR(isFiring), true];
-		_unit spawn {
-			sleep 0.1;
-			_this setVariable [SVAR(isFiring), false];
-		};
-	}];
+			_unit setVariable [SVAR(isFiring), true];
+			_unit spawn {
+				sleep 0.1;
+				_this setVariable [SVAR(isFiring), false];
+			};
+		}];
 
-	// --- Turn off IWB/ICB 
-	_x setVariable ["IWB_Disable", true, true];
-	
+		// --- Turn off IWB/ICB 
+		_x setVariable ["IWB_Disable", true, true];
+
+		// --- dzn_Dynai: Caching
+		_x setVariable ["dzn_dynai_cacheable", false, true];
+
+		// --- Custom code 
+		_x call GVAR(SquadCustomCode);
+
+
+		_x setVariable [SVAR(UnitSetUp), true];
+	};
 } forEach _units;
 
 

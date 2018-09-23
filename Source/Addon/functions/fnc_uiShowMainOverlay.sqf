@@ -247,21 +247,29 @@ _yOffset = 0.25;
 ];
 */
 
-// --- MANAGEMENT section ---
-// --------------------------
-_xOffset = 0.35;
-_yOffset = 0.25;
-{
-	_x params ["_label", "_code", "_bg", ["_tooltip", ""]];
+
+
+private _addOrderButton = {
+	params ["_elementData", "_xOffset", "_yOffset", "_ctrlWidth", "_ctrlHeight"];
+
+	_elementData params ["_label", "_code", "_bg", ["_tooltip", ""]];
 
 	[
-		_display
+		(findDisplay 134102)
 		, _label
 		, if (typename _code == "STRING") then { nil } else { _code }
 		, _xOffset, _yOffset, _ctrlWidth, _ctrlHeight
 		, _bg
 		, _tooltip
 	] spawn GVAR(fnc_uiCreateClickableLabel);
+};
+
+// --- MANAGEMENT section ---
+// --------------------------
+_xOffset = 0.35;
+_yOffset = 0.25;
+{
+	[_x, _xOffset, _yOffset, _ctrlWidth, _ctrlHeight] call _addOrderButton;
 	_yOffset = _yOffset + _ctrlHeight;
 } forEach [
 	[
@@ -293,6 +301,29 @@ _yOffset = 0.25;
 		, BG_BLACK
 	]
 	, [
+		"<t align='center' font='PuristaMedium'>Get In (Custom)</t>"
+		, { 
+			closeDialog 2;
+			if (vehicle player != player) then {
+				hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />My vehicle";
+				["Open", [vehicle player]] spawn GVAR(fnc_squadAssignVehicleRole);
+			} else {
+				if (isNull cursorTarget ) exitWith { hint parseText "No vehicle!"; };
+
+				private _v = cursorObject;
+				if ((_v call BIS_fnc_vehicleRoles) isEqualTo []) exitWith {  hint parseText "No vehicle!"; };
+
+				hint parseText format [
+					"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Get in vehicle - %1!"
+					, getText (configFile >> "CfgVehicles" >> typeof _v >> "displayName")
+				];
+				["Open", [_v]] spawn GVAR(fnc_squadAssignVehicleRole);
+			};
+		}
+		, BG_BLACK
+	]
+	, ["","",BG_EMPTY]
+	, [
 		"<t align='center' font='PuristaMedium'>Unload (fast)</t>"
 		, {
 			closeDialog 2;
@@ -301,8 +332,6 @@ _yOffset = 0.25;
 		}
 		, BG_BLACK
 	]
-
-
 	, [
 		"<t align='center' font='PuristaMedium'>Bail Out</t>"
 		, {
@@ -313,6 +342,42 @@ _yOffset = 0.25;
 		, BG_BLACK
 	]
 ];
+
+
+// --- MOVE section ---
+// --------------------------
+_xOffset = 0.75;
+_yOffset = 0.25;
+{
+	[_x, _xOffset, _yOffset, _ctrlWidth, _ctrlHeight] call _addOrderButton;
+	_yOffset = _yOffset + _ctrlHeight;
+} forEach [
+	[
+		"<t align='center' font='PuristaMedium'>M O V E</t>"
+		, ""
+		, BG_EMPTY
+	]
+	, [
+		"<t align='center' font='PuristaMedium'>Breach</t>"
+		, {
+			closeDialog 2;
+
+			if (cursorObject isKindOf "House") then {
+				hint parseText format [
+					"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Breach that building (%1)!"
+					, getText (configFile >> "CfgVehicles" >> typeof cursorObject >> "displayName")
+				];
+				[[],cursorObject] call fnc_breach;
+
+			} else {
+				hint parseText "No house pointed!";
+			};
+		}
+		, BG_BLACK
+	]
+];
+
+
 
 // --- COMBAT section ---
 // ----------------------

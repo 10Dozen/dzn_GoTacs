@@ -29,8 +29,7 @@ GVAR(ContactsHUD_Opacity) = 1;
 [] spawn {
 	sleep 2;
 	waitUntil { !isNull player };
-
-	call GVAR(fnc_setupSquadUnits);
+	
 	"Squad" call GVAR(fnc_uiShowHUD);
 	"Contacts" call GVAR(fnc_uiShowHUD);
 
