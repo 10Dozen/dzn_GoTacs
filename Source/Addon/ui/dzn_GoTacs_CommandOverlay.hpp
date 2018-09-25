@@ -42,4 +42,13 @@ class RscTitles {
 		};
 	};
 
+	class dzn_GoTacs_Rsc
+	{
+		idd = 133799;
+		movingEnable = 0;
+		duration = 60000;
+		onLoad = "uiNamespace setVariable [""dzn_GoTacs_Rsc"", _this select 0];"; 
+		class controls {};
+	};
+
 };

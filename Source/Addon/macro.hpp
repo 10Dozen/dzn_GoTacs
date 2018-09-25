@@ -2,7 +2,7 @@
 #define	gADDON GoTacs
 #define	gADDON_NAME dzn_##gADDON
 
-#define gADDON_PATH \##gADDON_NAME
+#define gADDON_PATH ##gADDON_NAME
 #define gFNC_PATH gADDON_PATH##\functions\##
 
 #define QUOTE(s) #s

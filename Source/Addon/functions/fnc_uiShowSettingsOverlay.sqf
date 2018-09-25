@@ -247,7 +247,6 @@ private _yOffset = 0.2;
 			hint "Squad HUD: DISABLED"; 
 			GVAR(SquadHUD_Draw) = false;
 			["TeamMarkersControls_Switch", 2] call GVAR(fnc_uiSwitchSelectorGroup);
-
 		}, if !(GVAR(SquadHUD_Draw)) then { BG_WHITE } else { BG_BLACK }]
 	]
 
@@ -325,6 +324,27 @@ private _yOffset = 0.2;
 			}, if (GVAR(SquadHUD_Opacity) == 1) then { BG_WHITE } else  { BG_BLACK }
 			, 0.05
 		]
+	]
+
+	/* --- Command pointer --- */
+	, [
+		"TeamMarkersControls_CommandIcon"
+		,["<t align='right' font='PuristaMedium'>Show pointer:</t>", "", BG_EMPTY]
+		,["<t align='center' font='PuristaMedium'>On</t>", {
+
+			hint "Command pointer: ENABLED";
+			GVAR(CommandHUD_Draw) = true;			
+			"show" spawn fnc_showCommandPointer;
+
+		}, if (GVAR(CommandHUD_Draw)) then { BG_WHITE } else { BG_BLACK }]
+		,["<t align='center' font='PuristaMedium'>Off</t>", { 
+
+			hint "Command pointer: DISABLED"; 
+			GVAR(CommandHUD_Draw) = false;
+			"hide" spawn fnc_showCommandPointer;
+
+		}, if !(GVAR(CommandHUD_Draw)) then { BG_WHITE } else { BG_BLACK }]
+
 	]
 ];
 

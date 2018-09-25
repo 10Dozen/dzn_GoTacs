@@ -22,7 +22,7 @@ Author:
 
 private _targets = [];
 private _units = [];
-private _squad = units player - [player];
+private _squad = (units player) select { !isPlayer _x };
 
 if (count _squad == 0) exitWith { [] };
 if (count _squad > 4) then {

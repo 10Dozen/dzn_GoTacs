@@ -7,11 +7,11 @@ class CfgPatches
 		requiredVersion = 0.1;
 		requiredAddons[] = {"CBA_MAIN"};
 		author[] = {"10Dozen"};
-		version = "0.1";
+		version = "0.000006";
 	};
 };
 
-class Extended_PreInit_EventHandlers
+class Extended_PostInit_EventHandlers
 {
 	class dzn_GoTacs
 	{

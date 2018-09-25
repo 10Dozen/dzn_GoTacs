@@ -10,6 +10,13 @@ COMPILE_FUNCTION(fnc_getUnitDamageData);
 
 COMPILE_FUNCTION(fnc_setupSquadUnits);
 COMPILE_FUNCTION(fnc_assignTeams);
+COMPILE_FUNCTION(fnc_getUnits);
+COMPILE_FUNCTION(fnc_getSelectedTeamUnits);
+COMPILE_FUNCTION(fnc_getDistibutionMap);
+
+COMPILE_FUNCTION(fnc_issueOrder);
+
+COMPILE_FUNCTION(fnc_handleTeamSelection);
 
 COMPILE_FUNCTION(fnc_uiShowHUD);
 COMPILE_FUNCTION(fnc_uiHideHUD);
@@ -21,10 +28,11 @@ COMPILE_FUNCTION(fnc_findContacts);
 COMPILE_FUNCTION(fnc_contactsLoop);
 COMPILE_FUNCTION(fnc_uiDrawContactsHUD);
 
+COMPILE_FUNCTION(fnc_uiDrawTeamSelection);
+
 COMPILE_FUNCTION(fnc_squadManageMenu);
 COMPILE_FUNCTION(fnc_squadCustomizeMenu);
 COMPILE_FUNCTION(fnc_squadAssignVehicleRole);
-
 
 
 
@@ -43,6 +51,53 @@ fnc_resetContactLoop = {
 	[] spawn GVAR(fnc_contactsLoop);
 };
 
+
+dzn_GoTacs_fnc_onLoadCommandOverlay = {
+	uiNamespace setVariable ["dzn_GoTacs_CommandOverlay", _this select 0];
+};
+
+fnc_showCommandPointer = {
+	switch (toLower _this) do {
+		case "show": {
+			("dzn_GoTacs_CommandOverlay" call BIS_fnc_rscLayer) cutRsc ["dzn_GoTacs_CommandOverlay", "PLAIN"];
+
+			disableSerialization;
+
+			private _display = uiNamespace getVariable "dzn_GoTacs_CommandOverlay";
+			private _ctrl = _display ctrlCreate ["RscStructuredText", 2500];
+			_ctrl ctrlSetStructuredText parseText "<img align='center' size='2' image='\a3\ui_f\data\GUI\Rsc\RscDisplayArcadeMap\icon_sidebar_hide_up'/>";
+			_ctrl ctrlSetTextColor [1,1,1,0.5];
+
+			_ctrl ctrlSetBackgroundColor [1,0,0,0];
+			private _size = [0.2,0.2];
+			private _pos = [
+				0.5 - (_size # 0)/2
+				, 0.4 + (_size # 1)/2
+			];
+			_ctrl ctrlSetPosition [_pos # 0, _pos # 1, _size # 0, _size # 1];
+			_ctrl ctrlCommit 0;
+
+		};
+		case "hide": {
+			("dzn_GoTacs_CommandOverlay" call BIS_fnc_rscLayer) cutText ["", "PLAIN"];
+		}
+	};
+};
+
+
+
+
+
+
+
+/*
+player setVariable [SVAR(Teams), [
+	_teamRed
+	, _teamBlue
+	, _teamGreen
+	, _teamYellow
+]];
+*/
 
 
 // --- ORDERS: MOVE ---
@@ -74,6 +129,8 @@ fnc_breach2 = {
 */
 
 
+
+/*
 fnc_breach = {
 	params ["_units","_building"];
 
@@ -146,9 +203,8 @@ fnc_getDistibutionMap = {
 	_result
 };
 
-
-
 // --- ORDERS ---
+
 fnc_dismountFast = {
 	private _units = _this select {
 		private _vrole = assignedVehicleRole _x;
@@ -164,7 +220,6 @@ fnc_dismountFast = {
 
 	_units spawn fnc_bailOut;	
 };
-
 fnc_bailOut = {
 	private _units = _this - [player];
 
@@ -239,3 +294,19 @@ fnc_getInFast = {
 		};
 	} forEach _units;
 };
+
+*/
+
+
+
+
+/*
+Handle selecting team
+see details: https://community.bistudio.com/wiki/inputAction/actions
+ 
+[] spawn { 
+ waitUntil {inputAction "SelectTeamRed" > 0};   
+ hint "Red team selected"; 
+ [(player getVariable "dzn_GoTacs_Teams") # 0, cursorObject] spawn fnc_breach;
+};
+*/

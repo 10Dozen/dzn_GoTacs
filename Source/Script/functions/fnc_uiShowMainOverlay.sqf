@@ -22,8 +22,11 @@ Author:
 #include "..\macro.hpp"
 #define GET_CTRL(X) (_display displayCtrl  X)
 
+#define SEL_UNITS [] call GVAR(fnc_getSelectedTeamUnits)
+
 #define BG_BLACK [0,0,0,1]
 #define BG_WHITE [1,1,1,1]
+#define BG_GRAY [0.9,0.9,0.9,1]
 #define BG_RED [0.85,0,0,1]
 #define BG_GREEN [0,0.85,0,1]
 #define BG_BLUE [0.15, 0.15, 0.75, 1]
@@ -76,7 +79,7 @@ private _cellWidth = 0.035;
 	} forEach _lineItems;
 
 	uiNamespace setVariable [_ctrlGroupName, _ctrlGroup];
-	_xOffset = _xOffset + 0.05; 
+	_xOffset = _xOffset + 0.015; 
 } forEach [
 	#define RE_OPEN()	[] spawn { closeDialog 2; [] spawn dzn_GoTacs_fnc_uiShowMainOverlay;}
 	#define CM_TITLE(X) if (combatMode (group player) == X) then { "#" } else { "" }
@@ -144,7 +147,7 @@ private _cellWidth = 0.035;
 	#define SM_TITLE(X) if (speedMode (group player) == X) then { "#" } else { "" }
 	, [
 		"SpeedMode_Switch"
-		,["<t align='right' font='PuristaMedium'>Speed:</t>", "", BG_EMPTY, 0.125]
+		,["<t align='right' font='PuristaMedium'>Speed:</t>", "", BG_EMPTY, 0.1]
 		,[ SM_TITLE("FULL"), {
 			hint parseText "<t size='1' color='#FFD000' shadow='1'>Squad speed mode:</t><br />FULL";
 			(group player) setSpeedMode "FULL";
@@ -161,8 +164,33 @@ private _cellWidth = 0.035;
 			RE_OPEN();
 		}, BG_BLUE, _cellWidth, "Limited"]
 	]
+	
+	, [
+		"StanceMode_Switch"
+		,["<t align='right' font='PuristaMedium'>Stance:</t>", "", BG_EMPTY, 0.125, "Can be applied to specific team"]
+		, ["A", {
+			hint parseText "<t size='1' color='#FFD000' shadow='1'>Squad stance:</t><br />AUTO";
+			(SEL_UNITS) apply { _x setUnitPos "AUTO" };
+			RE_OPEN();
+		}, BG_GRAY, _cellWidth, "Stance: Auto"]
+		, ["U", {
+			hint parseText "<t size='1' color='#FFD000' shadow='1'>Squad stance:</t><br />Up";
+			(SEL_UNITS) apply { _x setUnitPos "UP" };
+			RE_OPEN();
+		}, BG_GRAY, _cellWidth, "Stance: Up"]
+		, ["M", {
+			hint parseText "<t size='1' color='#FFD000' shadow='1'>Squad stance:</t><br />Middle";
+			(SEL_UNITS) apply { _x setUnitPos "MIDDLE" };
+			RE_OPEN();
+		}, BG_GRAY, _cellWidth, "Stance: Middle"]
+		, ["D", {
+			hint parseText "<t size='1' color='#FFD000' shadow='1'>Squad stance:</t><br />Down";	
+			(SEL_UNITS) apply { _x setUnitPos "DOWN" };
+			RE_OPEN();
+		}, BG_GRAY, _cellWidth, "Stance: Down"]
+	]
 
-	#define FM_BGCOLOR(X) if (formation (group player) == X) then { BG_BLUE } else { [0.9,0.9,0.9,1] }
+	#define FM_BGCOLOR(X) if (formation (group player) == X) then { BG_BLUE } else { BG_GRAY }
 	, [
 		"FormationMode_Switch"
 		,["<t align='right' font='PuristaMedium'>Formation:</t>", "", BG_EMPTY, 0.125]
@@ -213,6 +241,7 @@ private _cellWidth = 0.035;
 		}, FM_BGCOLOR("DIAMOND"), _cellWidth, "Diamond"]
 	]
 
+
 ];
 
 // --- Commanding buttons ---
@@ -225,29 +254,6 @@ private _ctrlHeight = 0.05;
 
 // --- MOVE section ---
 // --------------------
-/*
-_yOffset = 0.25;
-{
-	_x params ["_label", "_code", "_bg"];
-
-	[
-		_display
-		, _label
-		, if (typename _code == "STRING") then { nil } else { _code }
-		, _xOffset, _yOffset, _ctrlWidth, _ctrlHeight
-	] spawn GVAR(fnc_uiCreateClickableLabel);
-
-	_yOffset = _yOffset + _ctrlHeight;
-} forEach [
-	[
-		"<t align='center' font='PuristaMedium'>Breach &amp; Clear</t>"
-		, { hint "Breach and clear" }
-		, BG_BLACK		
-	]
-];
-*/
-
-
 
 private _addOrderButton = {
 	params ["_elementData", "_xOffset", "_yOffset", "_ctrlWidth", "_ctrlHeight"];
@@ -284,7 +290,8 @@ _yOffset = 0.25;
 
 			if (vehicle player != player) then {
 				hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Get in my vehicle!";
-				[units player, vehicle player] call fnc_getInFast;
+				["Get In fast", [SEL_UNITS, vehicle player]] spawn GVAR(fnc_issueOrder);
+				["Deselect"] call GVAR(fnc_handleTeamSelection);
 			} else {
 				if (isNull cursorTarget ) exitWith { hint parseText "No vehicle!"; };
 
@@ -295,7 +302,9 @@ _yOffset = 0.25;
 					"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Get in vehicle - %1!"
 					, getText (configFile >> "CfgVehicles" >> typeof _v >> "displayName")
 				];
-				[units player, _v] call fnc_getInFast;
+				
+				["Get In fast", [SEL_UNITS, _v]] spawn GVAR(fnc_issueOrder);
+				["Deselect"] call GVAR(fnc_handleTeamSelection);
 			};
 		}
 		, BG_BLACK
@@ -305,7 +314,7 @@ _yOffset = 0.25;
 		, { 
 			closeDialog 2;
 			if (vehicle player != player) then {
-				hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />My vehicle";
+				hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />My vehicle";				
 				["Open", [vehicle player]] spawn GVAR(fnc_squadAssignVehicleRole);
 			} else {
 				if (isNull cursorTarget ) exitWith { hint parseText "No vehicle!"; };
@@ -328,7 +337,8 @@ _yOffset = 0.25;
 		, {
 			closeDialog 2;
 			hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Dismount! Fast!";
-			(units player) spawn fnc_dismountFast;
+			["Dismount fast", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
 		}
 		, BG_BLACK
 	]
@@ -337,7 +347,8 @@ _yOffset = 0.25;
 		, {
 			closeDialog 2;
 			hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Bail out! Bail out! Bail out!";
-			(units player) spawn fnc_bailOut;
+			["Bail out", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
 		}
 		, BG_BLACK
 	]
@@ -367,11 +378,45 @@ _yOffset = 0.25;
 					"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Breach that building (%1)!"
 					, getText (configFile >> "CfgVehicles" >> typeof cursorObject >> "displayName")
 				];
-				[[],cursorObject] call fnc_breach;
 
+				["Breach", [SEL_UNITS, cursorObject]] spawn GVAR(fnc_issueOrder);
+				["Deselect"] call GVAR(fnc_handleTeamSelection);
 			} else {
 				hint parseText "No house pointed!";
 			};
+		}
+		, BG_BLACK
+	]
+	, [
+		"", "", BG_EMPTY
+	]
+	, [
+		"<t align='center' font='PuristaMedium'>Find cover</t>"
+		, {
+			closeDialog 2;
+
+			hint parseText format [
+				"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Find cover!"
+			];
+
+			["Find cover", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
+		}
+		, BG_BLACK
+	]
+	, [
+		"<t align='center' font='PuristaMedium'>Rally up</t>"
+		, {
+			closeDialog 2;
+
+			hint parseText format [
+				"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Rally up!"
+			];
+
+			["Rally up", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
 		}
 		, BG_BLACK
 	]

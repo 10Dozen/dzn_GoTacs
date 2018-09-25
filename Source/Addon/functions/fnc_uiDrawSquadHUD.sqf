@@ -34,7 +34,7 @@ if (!GVAR(SquadHUD_Draw)) exitWith {};
 			case "RED": 	{ [0.85, 0, 0, 1] };
 			case "BLUE": 	{ [0.1, 0.1, 0.95, 1] };
 			case "GREEN": 	{ [0, 0.85, 0, 1] };
-			case "YELOW":	{ [0.93, 0.86, 0.16, 1] };
+			case "YELLOW":	{ [0.93, 0.86, 0.16, 1] };
 			default 		{ [1,1,1,1] };
 		}];
 	};
@@ -44,7 +44,13 @@ if (!GVAR(SquadHUD_Draw)) exitWith {};
 	_posV set [2, (getPosATL _u select 2) + 1.75];
 		
 	// --- Distance data ---
-	private _distText = str(round _dist) + "m";
+	private _distText = "";
+	if (_u getVariable [SVAR(CurrentOrder),""] != "") then {
+		_distText = "< " + (_u getVariable SVAR(CurrentOrder)) + " >";
+	} else {
+		_distText = str(round _dist) + "m";
+	};
+
 	private _distPos = [] + _posV;
 	_distPos set [2, (_posV select 2) + 0.025*_dist];
 
