@@ -153,8 +153,8 @@ switch (toLower _mode) do {
 	// --- Move in selected 
 	case "move": {
 		_arg params ["_unit", "_v","_seatType"];
-	
-		[_unit, getPos _v] spawn fnc_sprintTo;
+
+		["Unit sprint to", [_u, getPos _v]] spawn GVAR(fnc_issueOrder);
 
 		sleep 5;
 
