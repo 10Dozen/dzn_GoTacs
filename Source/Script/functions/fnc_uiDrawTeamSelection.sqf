@@ -59,8 +59,8 @@ private ["_ctrlLabel", "_ctrlColor"];
 		_ctrlColor ctrlCommit 0;
 	};
 } forEach [
-	[_this # 0, "RED", count (_teamsUnits # 0), [0.85, 0, 0, 1]]
-	,[_this # 1, "BLUE", count (_teamsUnits # 1), [0.1, 0.1, 0.95, 1]]
-	,[_this # 2, "GREEN", count (_teamsUnits # 2),  [0, 0.85, 0, 1]]
-	,[_this # 3, "YELLOW",count (_teamsUnits # 3), [0.93, 0.86, 0.16, 1]]
+	[_this # 0, "RED", {alive _x } count (_teamsUnits # 0), [0.85, 0, 0, 1]]
+	,[_this # 1, "BLUE", {alive _x } count (_teamsUnits # 1), [0.1, 0.1, 0.95, 1]]
+	,[_this # 2, "GREEN", {alive _x }  count (_teamsUnits # 2),  [0, 0.85, 0, 1]]
+	,[_this # 3, "YELLOW", {alive _x } count (_teamsUnits # 3), [0.93, 0.86, 0.16, 1]]
 ];

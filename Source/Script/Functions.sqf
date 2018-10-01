@@ -90,223 +90,401 @@ fnc_showCommandPointer = {
 
 
 
-/*
-player setVariable [SVAR(Teams), [
-	_teamRed
-	, _teamBlue
-	, _teamGreen
-	, _teamYellow
-]];
-*/
 
 
-// --- ORDERS: MOVE ---
-/*
-fnc_breach2 = {
-	params ["_units","_building"];
 
-	if (_units isEqualTo []) then {
-		_units = units player - [player];
-	};
 
-	private _hPositions = [_building] call BIS_fnc_buildingPositions;
-	if (_hPositions isEqualTo []) exitWith { hint "Not enterable!"; };
 
-	private _posPerUnits = round ( (count _hPositions) / (count _units) );
-	private _index = 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+fnc_helperCreate = { 
+	CH = "Sign_Arrow_Direction_F" createVehicle (getPos player); 
+};
+fnc_rotate3 = {
+	private _newDir = (getDir player) + (_this select 0);
+
+	CH1 = "Sign_Arrow_Direction_F" createVehicle (getPos player); 
+	CH2 = "Sign_Arrow_Direction_F" createVehicle (getPos player); 
+
+	pos1 = (player) getPos [2.75, _newDir];
+
+	tgtPos = dzn_cam_pos getPos [22.75, _newDir];
+	camPos = dzn_cam_pos getPos [-2.75, _newDir];
+	camPos set [2,3.75];
+
+	camPosRel = camPos vectorDiff tgtPos;
 	
-	{
-		private _poses = [];
-		for "_i" from 1 to _posPerUnits do {
-			_poses pushBack (_hPositions select _index);
-			_index = _index + 1;
-		};
 
-		[_x, _poses] spawn fnc_doBreach;
-	} forEach _units;
+	CH1 setPos camPos;
+	CH1 setDir _newDir;
+
+	CH2 setPos tgtPos;
+	CH2 setDir _newDir;
 };
 
-*/
 
 
 
-/*
-fnc_breach = {
-	params ["_units","_building"];
+fnc_cam = {
+	cam = "camera" camCreate (getPos player);
 
-	if (_units isEqualTo []) then {
-		_units = units player - [player];
-	};
-
-	private _hPoses = [_building] call BIS_fnc_buildingPositions;
-	if (_hPoses isEqualTo []) exitWith { hint "Not enterable!"; };
-
-	// --- Split positions by number of units pairs
-	private _pairsCount = floor (count _units / 2);
-	private _pairs = [_pairsCount, _units] call fnc_getDistibutionMap;
-	private _map = [_pairs, _hPoses] call fnc_getDistibutionMap;
-
-	{
-		private _index = _forEachIndex;
-		private _pairUnits = _x;
-		private _poses = _map select _index;
-
-		{
-			[_x, _poses] spawn fnc_doBreach;
-		} forEach _pairUnits;
-	} forEach _pairs;
-};
-
-fnc_doBreach = {
-	params ["_u", "_poses"];
-
-	{
-		private _timeout = time + 20;
-		_u doMove _x;
-		waitUntil { sleep 1; _u distance _x < 1.5 || time > _timeout };
-	} forEach _poses;
-};
-
-fnc_getDistibutionMap = {
-	// Return array of items distributed between given consumers, e.g. [ [@Item1, @Item2, @Item3], [@ItemN, @ItemN+1], [@ItemM, @ItenM+1] ]
-	// _consumers - <NUMBER> or <ARRAY> to distribute between 
-	// _items - <ARRAY> of data to be distributed
-	params ["_consumers", "_items"];
-
-	private _itemCount = count _items; 
-	private _consumerCount = if (typename _consumers == "SCALAR") then { _consumers } else { count _consumers };
-
-	private _times = floor (_itemCount/_consumerCount); // min. items per each consumer 
-	private _left = _itemCount - _times * _consumerCount; // items left undistributed
-
-	private _result = [];
-
-	// --- Divide items between each consumer
-	for "_i" from 1 to _consumerCount do {
-		private _consumerItems = [];
-		for "_j" from 1 to _times do {
-			_consumerItems pushBack (_items select ((_i-1)*_times + _j - 1));
-		};
-
-		_result pushBack _consumerItems;
-	};
-
-	// --- Distribute left items, until any item left
-	while { _left > 0 } do {
-		for "_i" from 0 to (_consumerCount - 1) do {
-			if (_left == 0) exitWith {};
-			_result set [_i, (_result select _i) + [ _items select ( _itemCount - _left ) ]];
-			_left = _left - 1;
-		};
-	};
+	cam cameraEffect ["INTERNAL","BACK"];
 	
-	_result
+	[cam, [-20,0,0]] call fnc_SetPitchBankYaw;
+	cam camSetFov 0.75;
+	showCinemaBorder false;
+	cameraEffectEnableHUD true;
+	cam camCommit 0;
+
+	dzn_cam_dir = getDir player;
+	dzn_cam_pos = getPos player;
+	dzn_cam_dirDelta = 0;
+	dzn_keyPressTimeout = 0;
 };
 
-// --- ORDERS ---
+fnc_closeCam = {
+	cam cameraEffect ["Terminate", "Back"];
+	camDestroy cam;
+};
 
-fnc_dismountFast = {
-	private _units = _this select {
-		private _vrole = assignedVehicleRole _x;
+fnc_camRotate3 = {
+	params["_newDir", "_commitTime"];
 
-		!isPlayer _x
-		&& !(
-			"driver" in _vrole
-			|| "gunner" in _vrole
-			|| "turret" in _vrole
-			|| "Turret" in _vrole
-		)
+	private _dir = _newDir + dzn_cam_dir;
+	tgtPos = dzn_cam_pos getPos [22.75, _dir];
+	camPos = dzn_cam_pos getPos [-2.75, _dir];
+	camPos set [2,3.75];
+
+	camPosRel = camPos vectorDiff tgtPos;
+
+	cam camSetTarget tgtPos;
+	cam camSetRelPos camPosRel;
+
+	cam camCommit _commitTime;
+};
+
+fnc_addButtonsEH = {
+	if (_this == "add") then {
+		dzn_cam_handler = (findDisplay 46) displayAddEventHandler ["KeyDown", "_handled = _this call fnc_buttonEH"];
+	} else {
+		(findDisplay 46) displayRemoveEventHandler ["KeyDown", dzn_cam_handler];
+	};
+};
+
+fnc_buttonEH = {
+	params ["", "_key", "_shift", "_ctrl", "_alt"];
+
+	hintSilent str(_this);
+	if (dzn_keyPressTimeout > time) exitWith {};
+
+	private _handled = false;
+	private _step = 15;
+	switch _key do {
+		// A 
+		case 30: {
+			dzn_cam_dirDelta = dzn_cam_dirDelta - _step;
+			_handled = true;
+		};
+
+		// D
+		case 32: {
+			dzn_cam_dirDelta = dzn_cam_dirDelta + _step;
+			_handled = true;
+		};
+
+		// F1
+		case 59: {
+			hint "Red selected";
+			//["handle", "blue"] spawn dzn_GoTacs_fnc_handleTeamSelection;
+		};
+		// F2
+		case 60: {
+			hint "Red selected";
+			// ["handle", "red"] spawn dzn_GoTacs_fnc_handleTeamSelection;
+		};
 	};
 
-	_units spawn fnc_bailOut;	
+	if (_handled) then {
+		dzn_keyPressTimeout = time + 0.15;
+		[dzn_cam_dirDelta, 0.13] call fnc_camRotate3;
+	};
+
+	true
 };
-fnc_bailOut = {
-	private _units = _this - [player];
 
-	{
-		[_x, assignedVehicle _x, _forEachIndex % 2 == 0] spawn {
-			params ["_u", "_v", "_isDirLeft"];
+fnc_StartCam = {
+	call fnc_cam;
+	[0,1] call fnc_camRotate3;
 
-			waitUntil { (velocity _v select 0) < 2 };
+	"add" call fnc_addButtonsEH;
+};
 
-			unassignVehicle _u;
-			moveOut _u;
+dzn_cam_move = {
+	params["_mode", "_args"];
 
-			private _posX = if (_isDirLeft) then { 1 } else { -1 };
-			private _pos = _v modelToWorld [_posX * 25, -25, 0];
+	switch (tolower _mode) do {
+		case "create": {
+			dzn_pointerMove = "VR_3DSelector_01_default_F" createVehicleLocal (getPos player);
+			call dzn_cam_move_addEachFrameHandler;
+		};
+		case "finish": {
+			deleteVehicle dzn_pointerMove;
+			removeMissionEventHandler ["EachFrame", dzn_cam_move_mouseEH];
+		};
+		case "handle mouse move": {
+			private _pos = screenToWorld (getMousePosition);
+			//_pos set [2, 0];
+			dzn_pointerMove setPosATL _pos;
+		};
+	};
+};
+
+dzn_cam_move_addEachFrameHandler = {
+	dzn_cam_move_mouseEH = addMissionEventHandler ["EachFrame", { ["handle mouse move"] call dzn_cam_move; }];
+};
+
+
+
+
+fnc_handleZWheel = {
+	dzn_cam_dirDelta = dzn_cam_dirDelta + ((_this select 1) * 30);
+
+	_camID = time;
+	dzn_CAMID = _camID;
+	[_camID] spawn {
+		sleep 0.04;
+
+		if ((_this select 0) != dzn_CAMID) exitWith {};
+
+		[dzn_cam_dirDelta, 1] spawn fnc_camRotate3;
+	}
+	
+};
+
+fnc_addEH = {
+	findDisplay 46 displayAddEventHandler ["MouseZChanged", { _this spawn fnc_handleZWheel }];
+};
+
+fnc_mousehandler = {
+	waitUntil { !isNull (findDisplay 134102) };
+
+	hint "DIALOG FOUND";
+
+	while { !isNull (findDisplay 134102) } do {
+
+		if (time > dzn_RegisteredTimeout) then {
+			private _pos = getMousePosition # 0;
+			hint str(_pos);
 			
-			[_u, _pos getPos [10, random 360], 20, [true, _v]] spawn fnc_sprintTo;
-		};
+			private _angleStep = [5,15,30];
+			private _commitTime = 0.35;
+			private _timeout = 0.36;
 
-		sleep (0.35 + random 0.5);
-	} forEach _units;
-};
+			private _speedID = -1;
+			private _rotateDir = 0;
 
-fnc_sprintTo = {
-	params ["_u", "_pos", ["_timeout", 20], ["_doOverwatch", [false, objNull]]];
-	_timeout = time + _timeout;
-
-	_u doMove _pos;
-	waitUntil { 
-		_u setAnimSpeedCoef 1.5; 
-		
-		sleep 0.5;
-		_u distance _pos < 2.5 || time > _timeout
-	};
-
-	_u setAnimSpeedCoef 1;
-
-	if (_doOverwatch # 0) then {
-		sleep 1.5;
-		_posToWatch = (_doOverwatch # 1) modelToWorld [selectRandom[1,-1] * 50, 50, 0];
-		_u doWatch _posToWatch;
-
-		sleep 3;
-		_u doWatch objNull; 
-	};
-};
-
-fnc_getInFast = {
-	params ["_units","_v"];
-	_units = _units - [player];
-
-	{
-		if (vehicle _x == _x) then {
-			[_x, _v, _role] spawn {
-				params ["_u","_v","_r"];
-
-				private _timeout = time + 20;
-
-				[_u, getPos _v, 20] spawn fnc_sprintTo;
-
-				waitUntil { 
-					_u distance (getPos _v) < 6.5 
-					|| time > _timeout
+			switch (true) do {
+				case (_pos < 0.01): {
+					_rotateDir = 1;
+					_speedID = 0;
 				};
-
-				if (_u distance (getPos _v) < 6.5) then {
-					sleep 1.5;
-					_u moveInAny _v;
+				case (_pos < 0.03): {
+					_rotateDir = 1;
+					_speedID = 1;
+				};			
+				case (_pos < 0.05): {
+					_rotateDir = 1;
+					_speedID = 2;
 				};
-
-				_u setAnimSpeedCoef 1; 
+				case (_pos > 0.99): {
+					_rotateDir = -1;
+					_speedID = 2;
+				};
+				case (_pos > 0.97): {
+					_rotateDir = -1;
+					_speedID = 1;
+				};
+				case (_pos > 0.95): {
+					_rotateDir = -1;
+					_speedID = 0;
+				};
 			};
+			
+			if (_speedID > 0) then {
+				dzn_cam_dirDelta = dzn_cam_dirDelta - ( _rotateDir * (_angleStep # _speedID));
+				[dzn_cam_dirDelta, _commitTime] spawn fnc_camRotate3;
+				dzn_RegisteredTimeout = time + _timeout;
+			};
+
 		};
-	} forEach _units;
+
+	};
 };
 
-*/
 
 
+
+
+
+
+fnc_SetPitchBankYaw = { 
+    private ["_object","_rotations","_aroundX","_aroundY","_aroundZ","_dirX","_dirY",
+	"_dirZ","_upX","_upY","_upZ","_dir","_up","_dirXTemp","_upXTemp"];
+    _object = _this select 0; 
+    _rotations = _this select 1; 
+    _aroundX = _rotations select 0; 
+    _aroundY = _rotations select 1; 
+    _aroundZ = (360 - (_rotations select 2)) - 360; 
+    _dirX = 0; 
+    _dirY = 1; 
+    _dirZ = 0; 
+    _upX = 0; 
+    _upY = 0; 
+    _upZ = 1; 
+    if (_aroundX != 0) then { 
+        _dirY = cos _aroundX; 
+        _dirZ = sin _aroundX; 
+        _upY = -sin _aroundX; 
+        _upZ = cos _aroundX; 
+    }; 
+    if (_aroundY != 0) then { 
+        _dirX = _dirZ * sin _aroundY; 
+        _dirZ = _dirZ * cos _aroundY; 
+        _upX = _upZ * sin _aroundY; 
+        _upZ = _upZ * cos _aroundY; 
+    }; 
+    if (_aroundZ != 0) then { 
+        _dirXTemp = _dirX; 
+        _dirX = (_dirXTemp* cos _aroundZ) - (_dirY * sin _aroundZ); 
+        _dirY = (_dirY * cos _aroundZ) + (_dirXTemp * sin _aroundZ);        
+        _upXTemp = _upX; 
+        _upX = (_upXTemp * cos _aroundZ) - (_upY * sin _aroundZ); 
+        _upY = (_upY * cos _aroundZ) + (_upXTemp * sin _aroundZ); 		
+    }; 
+    _dir = [_dirX,_dirY,_dirZ]; 
+    _up = [_upX,_upY,_upZ]; 
+    _object setVectorDirAndUp [_dir,_up]; 
+}; 
 
 
 /*
-Handle selecting team
-see details: https://community.bistudio.com/wiki/inputAction/actions
- 
-[] spawn { 
- waitUntil {inputAction "SelectTeamRed" > 0};   
- hint "Red team selected"; 
- [(player getVariable "dzn_GoTacs_Teams") # 0, cursorObject] spawn fnc_breach;
+Does anyone has expirience in cameras in A3? 
+I want to make an overhead camera pointed to ground (w. about 60 degree angle) and i want to rotate it around object without changing camera pointing angle. 
+
+Is there any guide for camera and vectoring stuff?
+
+Camera creation code is:
+fnc_cam = {
+	cam = "camera" camCreate (getPos player);
+
+	cam cameraEffect ["INTERNAL","BACK"];
+	cam attachTo [player, [0,-2.75,3.75]];  
+	cam setVectorUp [0,0.25,0.95];  
+	cam camSetFov 0.75;
+	showCinemaBorder false;
+	cameraEffectEnableHUD true;
+	cam camCommit 0;
+
 };
+
+I know that rotation may be made by setDir, but it makes resulting camera position rotated in several axes, like:
+ 
+
 */
+
+
+/*
+[] spawn {
+	sleep 1;
+	if (true) exitWith {};
+
+_cam = "camera" camCreate (getPos player);
+_cam cameraEffect ["internal","back"] ;
+_cam camPrepareFocus [-1,-1] ;
+_cam camCommitPrepared 0 ;
+cameraEffectEnableHUD true ;
+showCinemaBorder false ;
+
+PLP_animViewerLastHeight = (getPosASL player select 2) + 3.75;
+
+
+#define UPDATE_CAMERA \
+	PLP_animViewercamera camSetTarget ASLtoAGL (PLP_animViewerposCenter vectorAdd [0,0,(missionNamespace getVariable "PLP_animViewerLastHeight")]) ; \
+	PLP_animViewercamera camSetRelPos  ([PLP_animViewerzoom * sin PLP_animViewerdirX * cos PLP_animViewerdirY,PLP_animViewerzoom * cos PLP_animViewerdirX * cos PLP_animViewerdirY,PLP_animViewerzoom * (sin PLP_animViewerdirY)]) ; \
+	PLP_animViewercamera camCommit 0 ; \
+
+uiNamespace setVariable ["PLP_animViewercamera",_cam] ;
+uiNamespace setVariable ["PLP_animViewerdirX",0] ;
+uiNamespace setVariable ["PLP_animViewerdirY",5] ;
+uiNamespace setVariable ["PLP_animViewerposCenter",getPosASL player] ;
+uiNamespace setVariable ["PLP_animViewerzoom",5 * 0.8] ;
+uiNamespace setVariable ["PLP_animViewer_loop",false] ;
+
+findDisplay 46 displayAddEventHandler ["MouseButtonDown",{
+	with uiNamespace do {
+		if ((_this select 1) == 1) then {
+			PLP_animViewer_LMB_state = true ;
+		} else {
+			PLP_animViewer_RMB_state = true ;
+		} ;
+	} ;
+}] ;
+findDisplay 46 displayAddEventHandler ["MouseButtonUp",{
+	with uiNamespace do {
+		if ((_this select 1) == 1) then {
+			PLP_animViewer_LMB_state = false ;
+		} else {
+			PLP_animViewer_RMB_state = false ;
+		} ;
+	} ;
+}] ;
+
+findDisplay 46 displayAddEventHandler ["MouseMoving",{
+	with uiNamespace do {
+		_moveValue = [PLP_animViewermouseX - (_this select 1),PLP_animViewermouseY - (_this select 2)] ;
+		if (PLP_animViewer_LMB_state) then {
+			PLP_animViewerdirX = (PLP_animViewerdirX - (_moveValue select 0) * 80) ;
+			PLP_animViewerdirY = (PLP_animViewerdirY - (_moveValue select 1) * 80) min 85 max -85 ;
+		} ;
+
+		if (PLP_animViewer_RMB_state) then {
+			PLP_animViewerposCenter = (
+				AGLtoASL positionCameraToWorld [
+					 (_moveValue select 0) * PLP_animViewerzoom * 1.3,
+					-(_moveValue select 1) * PLP_animViewerzoom * 1.3,
+					PLP_animViewerzoom
+				] vectorDiff [0,0,missionNamespace getVariable "PLP_animViewerLastHeight"]
+			) ;
+			PLP_animViewerposCenter set [0,(PLP_animViewerposCenter select 0) min 5 max -5] ;
+			PLP_animViewerposCenter set [1,(PLP_animViewerposCenter select 1) min 5 max -5] ;
+			PLP_animViewerposCenter set [2,(PLP_animViewerposCenter select 2) min 3 max -3] ;
+		} ;
+	
+		PLP_animViewermouseX = _this select 1 ;
+		PLP_animViewermouseY = _this select 2 ;
+		UPDATE_CAMERA
+	} ;
+}] ;
+
+findDisplay 46 displayAddEventHandler ["MouseZChanged",{
+	with uiNamespace do {
+		PLP_animViewerzoom = PLP_animViewerzoom - ((_this select 1) * 0.25) min 15 max 0.5 ;
+		UPDATE_CAMERA
+	} ;
+}] ;
+
+};
+
+*/
+

@@ -6,6 +6,16 @@ call compile preprocessFileLineNumbers format ["%1\UIFunctions.sqf", PATH];
 call compile preprocessFileLineNumbers format ["%1\Settings.sqf", PATH];
 call compile preprocessFileLineNumbers format ["%1\Enums.sqf", PATH];
 
+/*
+Return list of currently selected groups units: groupSelectedUnits player;
+
+currentCommand
+expectedDestination
+
+*/
+
+
+
 // --- Teams 
 GVAR(Teams) = [];
 GVAR(TeamPattern) = "";

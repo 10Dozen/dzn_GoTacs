@@ -39,6 +39,8 @@ uiSleep 0.002;
 createDialog "dzn_GoTacs_MainOverlay";
 private _display = (findDisplay 134102);
 
+setMousePosition [0.5, 0.3];
+
 // --- Command/Set up toggle ---
 // -----------------------------
 private _overlayToggleCtrl = [
@@ -351,6 +353,22 @@ _yOffset = 0.25;
 			["Deselect"] call GVAR(fnc_handleTeamSelection);
 		}
 		, BG_BLACK
+	]
+	, [
+		"", "", BG_EMPTY
+	]
+	, [
+		"", "", BG_EMPTY
+	]
+	, [
+		"<t align='center' color='#000000' font='PuristaMedium'>Abort order</t>" 
+		,{
+			closeDialog 2;
+			hint parseText "<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Abort last order!";
+			["Abort", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
+		}
+		, BG_GRAY
 	]
 ];
 

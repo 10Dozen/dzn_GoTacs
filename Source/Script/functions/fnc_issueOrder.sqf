@@ -23,6 +23,7 @@ Author:
 #include "..\macro.hpp"
 
 #define SELF GVAR(fnc_issueOrder)
+#define SET_ORDER_SCRIPT _x setVariable [SVAR(OrderExecutionScript), _script]
 
 params["_order", ["_args", []]];
 
@@ -34,7 +35,8 @@ switch (toLower _order) do {
 
 		private _notMountedUnits = ["NotInVehicle", _units] call GVAR(fnc_getUnits);
 		{
-			["Unit Get in fast", [_x, _v]] spawn SELF;
+			private _script = ["Unit Get in fast", [_x, _v]] spawn SELF;
+			SET_ORDER_SCRIPT;
 		} forEach _notMountedUnits;
 	};
 	case "bail out": {
@@ -42,7 +44,8 @@ switch (toLower _order) do {
 		private _mountedUnits = ["InVehicle", _args] call GVAR(fnc_getUnits);
 		
 		{
-			["Unit Bail out", [_x, _forEachIndex % 2 == 0]] spawn SELF;
+			private _script = ["Unit Bail out", [_x, _forEachIndex % 2 == 0]] spawn SELF;
+			SET_ORDER_SCRIPT;
 		} forEach _mountedUnits;
 	};
 	case "dismount fast": {
@@ -50,7 +53,8 @@ switch (toLower _order) do {
 		private _mountedCargoUnits = ["InVehicleCargo", _args] call GVAR(fnc_getUnits);
 
 		{
-			["Unit Bail out", [_x, _forEachIndex % 2 == 0]] spawn SELF;
+			private _script = ["Unit Bail out", [_x, _forEachIndex % 2 == 0]] spawn SELF;
+			SET_ORDER_SCRIPT;
 		} forEach _mountedCargoUnits;
 	};
 	case "breach": {
@@ -73,7 +77,8 @@ switch (toLower _order) do {
 			private _poses = _map select _index;
 
 			{
-				["Unit Breach", [_x, _poses]] spawn SELF;
+				private _script = ["Unit Breach", [_x, _poses]] spawn SELF;
+				SET_ORDER_SCRIPT;
 			} forEach _pairUnits;
 		} forEach _pairs;
 	};
@@ -81,13 +86,21 @@ switch (toLower _order) do {
 		// --- Order to move to player 
 		private _units = ["NotInVehicle", _args] call GVAR(fnc_getUnits);
 		{
-			["Unit Rally up", [_x, player getPos [random 10, random 360]]] spawn SELF;
+			private _script = ["Unit Rally up", [_x, player getPos [random 10, random 360]]] spawn SELF;
+			SET_ORDER_SCRIPT;
 		} forEach _units;
 	};
 	case "find cover": {
 		private _units = ["NotInVehicle", _args] call GVAR(fnc_getUnits);
 		{
-			["Unit Find cover", _x] spawn SELF;
+			private _script = ["Unit Find cover", _x] spawn SELF;
+			SET_ORDER_SCRIPT;
+		} forEach _units;
+	};
+	case "abort": {
+		private _units = _args;
+		{
+			["Unit abort", _x] spawn SELF;
 		} forEach _units;
 	};
 
@@ -163,10 +176,11 @@ switch (toLower _order) do {
 
 		["Finish order", [_u, _orderID]] call SELF;
 
-		[
+		private _script = [
 			"Unit Sprint to"
 			, [_u, _pos getPos [10, random 360], 20, [true, _v]]
 		] spawn SELF;
+		_u setVariable [SVAR(OrderExecutionScript), _script];
 	};
 	case "unit breach": {
 		// --- Move unit through building positions
@@ -205,9 +219,9 @@ switch (toLower _order) do {
 				, [_u, format ["Rallying Up %1/3", _i]]
 			] call SELF;
 
-			_timeout = time + 20;
+			_timeout = time + 10;
 
-			["Unit Sprint to", [_u, _pos, 20]] spawn SELF;
+			["Unit Sprint to", [_u, _pos, 10]] spawn SELF;
 
 			waitUntil {
 				sleep 0.5;
@@ -289,6 +303,17 @@ switch (toLower _order) do {
 			["Finish order", [_u, _orderID]] call SELF;
 		};
 	};
+	case "unit abort": {
+		private _u = _args;	
+		private _script = _u getVariable [SVAR(OrderExecutionScript), scriptNull];
+
+		if (scriptDone _script) exitWith {};
+		
+		terminate _script;
+
+		_u setVariable [SVAR(OrderExecutionScript), nil];
+		["Finish order", [_u, "", true]] call SELF; // Force drop of orderID
+	};
 
 	// --- UTILITY --- 
 	case "make order": {
@@ -301,9 +326,10 @@ switch (toLower _order) do {
 	};
 	case "finish order": {
 		// --- Unmark unit from order execution state if order id is not changed
-		_args params ["_u", "_orderType"];
+		_args params ["_u", "_orderType", ["_forced", false]];
 
-		if (_u getVariable [SVAR(CurrentOrder), ""] != _orderType) exitWith {};		
+		if (!_forced && { _u getVariable [SVAR(CurrentOrder), ""] != _orderType }) exitWith {};
+
 		_u setVariable [SVAR(CurrentOrder), nil];
 	};
 };
