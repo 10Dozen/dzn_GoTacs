@@ -438,6 +438,23 @@ _yOffset = 0.25;
 		}
 		, BG_BLACK
 	]
+	, ["","",BG_EMPTY]
+	, [
+		"<t align='center' font='PuristaMedium'>Camera</t>"
+		, {
+			private _numOfTeams = { _x } count [GVAR(TeamRedSelected),GVAR(TeamBlueSelected),GVAR(TeamGreenSelected),GVAR(TeamYellowSelected)];
+			if (_numOfTeams != 1) exitWith { hint "Single fireteam should be selected!"; };
+			
+			closeDialog 2;
+			hint parseText format [
+				"<t size='1' color='#FFD000' shadow='1'>SQUAD:</t><br />Camera view!"
+			];
+
+			["Camera", SEL_UNITS] spawn GVAR(fnc_issueOrder);
+			["Deselect"] call GVAR(fnc_handleTeamSelection);
+		}
+		, BG_BLACK
+	]
 ];
 
 

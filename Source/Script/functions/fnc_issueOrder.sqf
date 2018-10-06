@@ -103,7 +103,25 @@ switch (toLower _order) do {
 			["Unit abort", _x] spawn SELF;
 		} forEach _units;
 	};
+	case "camera": {
+		private _unit = _args # 0;
 
+		if (!isNull _unit) then {
+
+			// Trying to attach cam to same unit
+			if (!isNil "dzn_CamTarget" && { dzn_CamTarget isEqualTo _unit && !isNull cam }) exitWith {};
+
+			if (isNil "cam" || { isNull cam }) then {
+				cam = objNull;
+				
+				call fnc_EndCam;
+				[_unit] call fnc_StartCam;
+			} else {
+				dzn_CamTarget = _unit;
+				[0,0] call fnc_camRotate;
+			};			
+		};
+	};
 
 	// --- Unit execution
 	case "unit sprint to": {
