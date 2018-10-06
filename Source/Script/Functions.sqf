@@ -151,7 +151,7 @@ fnc_camRotate = {
 	// camPos set [2,3.75];
 	private _hDelta = ((ATLtoASL tgtPos) # 2) - ((ATLtoASL camPos) # 2);
 
-	camPos set [2, dzn_cam_h - _hDelta;
+	camPos set [2, dzn_cam_h - _hDelta];
 
 	camPosRel = camPos vectorDiff tgtPos;
 	cam camSetTarget tgtPos;
