@@ -164,6 +164,9 @@ fnc_showGUI = {
 	createDialog "dzn_GoTacs_MainOverlay";
 	private _display = (findDisplay 134102);
 
+	// TODO: Hide black overlay!!!!
+	(_display displayCtrl 2200) ctrlSetBackgroundColor [0,0,0,0];
+
 	setMousePosition [0.5, 0.3];
 	dzn_cc_moveMode_Enabled = false;
 
